@@ -4,22 +4,23 @@ from GameEnv import RacingEnv
 config = {
     "env": RacingEnv,
     "seed":73,
-    "framework":"torch",
-
-    "prioritized_replay": ray.tune.grid_search([False, True]),
+    "framework":"tf2",
+    "prioritized_replay": True,
     "dueling": ray.tune.grid_search([False, True]),
     "double_q": ray.tune.grid_search([False, True]),
-    # "num_atoms": 0,
 }
 
 trainer = DQNTrainer(config)
+# while True:
+#     trainer.train()
 ray.tune.run(
     DQNTrainer,
     config=config,
     stop={
-        "episode_reward_mean": 300,
+        "episode_reward_mean": 50,
         "agent_timesteps_total": 200000,
     },
+    checkpoint_freq=10,
     checkpoint_at_end=True,
     verbose=1,
     progress_reporter=ray.tune.CLIReporter(print_intermediate_tables=True)
