@@ -6,6 +6,7 @@ from Goals import Goal
 from Goals import getGoals
 import gym
 import numpy as np
+from utils import renderFlag
 
 
 GOALREWARD = 1
@@ -85,11 +86,11 @@ class Car:
         self.height = 30
 
         self.points = 0
-
-        self.original_image = pygame.image.load("car.png").convert()
-        self.image = self.original_image  # This will reference the rotated image.
-        self.image.set_colorkey((0,0,0))
-        self.rect = self.image.get_rect().move(self.x, self.y)
+        if renderFlag:
+            self.original_image = pygame.image.load("car.png").convert()
+            self.image = self.original_image  # This will reference the rotated image.
+            self.image.set_colorkey((0,0,0))
+            self.rect = self.image.get_rect().move(self.x, self.y)
 
         self.angle = math.radians(180)
         self.soll_angle = self.angle
@@ -179,20 +180,18 @@ class Car:
 
         self.x = self.x + self.velX
         self.y = self.y + self.velY
-
-        self.rect.center = self.x, self.y
-
         self.pt1 = myPoint(self.pt1.x + self.velX, self.pt1.y + self.velY)
         self.pt2 = myPoint(self.pt2.x + self.velX, self.pt2.y + self.velY)
         self.pt3 = myPoint(self.pt3.x + self.velX, self.pt3.y + self.velY)
         self.pt4 = myPoint(self.pt4.x + self.velX, self.pt4.y + self.velY)
-
         self.p1 ,self.p2 ,self.p3 ,self.p4  = rotateRect(self.pt1, self.pt2, self.pt3, self.pt4, self.soll_angle)
 
-        self.image = pygame.transform.rotate(self.original_image, 90 - self.soll_angle * 180 / math.pi)
-        x, y = self.rect.center  # Save its current center.
-        self.rect = self.image.get_rect()  # Replace old rect with new rect.
-        self.rect.center = (x, y)
+        if renderFlag:
+            self.rect.center = self.x, self.y
+            self.image = pygame.transform.rotate(self.original_image, 90 - self.soll_angle * 180 / math.pi)
+            x, y = self.rect.center  # Save its current center.
+            self.rect = self.image.get_rect()  # Replace old rect with new rect.
+            self.rect.center = (x, y)
 
     def cast(self, walls):
 
@@ -380,31 +379,32 @@ class RacingEnv:
         self.width = 1000
         self.height = 600
         self.history = []
+        if renderFlag:
+            self.screen = pygame.display.set_mode((self.width, self.height))
+            pygame.display.set_caption("RACING DQN")
+            self.screen.fill((0,0,0))
+            self.back_image = pygame.image.load("track.png").convert()
+            self.back_rect = self.back_image.get_rect().move(0, 0)
 
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("RACING DQN")
-        self.screen.fill((0,0,0))
-        self.back_image = pygame.image.load("track.png").convert()
-        self.back_rect = self.back_image.get_rect().move(0, 0)
-        # self.action_space = None
-        # self.observation_space = None
         self.game_reward = 0
         self.score = 0
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(19,), dtype=np.float32)
         self.action_space = gym.spaces.Discrete(9)
  
-        self.reset()
+        _ = self.reset()
         
     def seed(self, seed: int = None):
         self.rng = np.random.default_rng(seed=seed)
 
     def reset(self):
-        self.screen.fill((0, 0, 0))
+        if renderFlag:
+            self.screen.fill((0, 0, 0))
 
         self.car = Car(50, 300)
         self.walls = getWalls()
         self.goals = getGoals()
         self.game_reward = 0
+        return self.car.cast(self.walls)
 
     def step(self, action):
 
@@ -424,7 +424,6 @@ class RacingEnv:
                     goal.isactiv = False
                     self.goals[index-2].isactiv = True
                     reward += GOALREWARD
-
             index = index + 1
 
         #check if car crashed in the wall
@@ -433,13 +432,11 @@ class RacingEnv:
                 reward += PENALTY
                 done = True
 
-        new_state = self.car.cast(self.walls)
-        #normalize states
-        if done:
-            new_state = None
+        obs = self.car.cast(self.walls)
+        info = {}
 
-        return new_state, reward, done
-
+        return np.asarray(obs, dtype=np.float32), float(reward), bool(done), info
+    
     def render(self, action):
 
         DRAW_WALLS = False
@@ -518,6 +515,5 @@ class RacingEnv:
 
     def close(self):
         pygame.quit()
-
 
 
