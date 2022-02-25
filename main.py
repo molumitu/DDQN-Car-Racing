@@ -4,6 +4,7 @@ import numpy as np
 from ddqn_keras import DDQNAgent
 from collections import deque
 import random, math
+from utils import renderFlag
 
 TOTAL_GAMETIME = 1000 # Max game time for one episode
 N_EPISODES = 10000
@@ -14,7 +15,6 @@ game.fps = 60
 
 GameTime = 0 
 GameHistory = []
-renderFlag = False
 
 ddqn_agent = DDQNAgent(alpha=0.0005, gamma=0.99, n_actions=5, epsilon=1.00, epsilon_end=0.10, epsilon_dec=0.9995, replace_target= REPLACE_TARGET, batch_size=512, input_dims=19)
 
@@ -28,22 +28,22 @@ eps_history = []
 def run():
 
     for e in range(N_EPISODES):
-        
-        game.reset() #reset env 
+        obs = game.reset()
+        observation_, reward, done, info = game.step(0) #reset env 
 
         done = False
         score = 0
         counter = 0
         
-        observation_, reward, done = game.step(0)
+        # observation_, reward, done = game.step(0)
         observation = np.array(observation_)
 
         gtime = 0 # set game time back to 0
         
         renderFlag = False # if you want to render every episode set to true
 
-        if e % 10 == 0 and e > 0: # render every 10 episodes
-            renderFlag = True
+        # if e % 10 == 0 and e > 0: # render every 10 episodes
+        #     renderFlag = True
 
         while not done:
             
@@ -52,7 +52,7 @@ def run():
                     return
 
             action = ddqn_agent.choose_action(observation)
-            observation_, reward, done = game.step(action)
+            observation_, reward, done, info = game.step(action)
             observation_ = np.array(observation_)
 
             # This is a countdown if no reward is collected the car will be done within 100 ticks

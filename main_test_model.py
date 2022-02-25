@@ -6,6 +6,7 @@ from ddqn_keras import DDQNAgent
 
 from collections import deque
 import random, math
+from utils import renderFlag
 
 
 
@@ -43,7 +44,7 @@ def run():
         gtime = 0
 
         #first step
-        observation_, reward, done = game.step(0)
+        observation_, reward, done, info = game.step(0)
         observation = np.array(observation_)
 
         while not done:
@@ -55,7 +56,7 @@ def run():
 
             #new
             action = ddqn_agent.choose_action(observation)
-            observation_, reward, done = game.step(action)
+            observation_, reward, done, info = game.step(action)
             observation_ = np.array(observation_)
 
             if reward == 0:
